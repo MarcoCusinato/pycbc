@@ -30,6 +30,7 @@ import copy
 
 import numpy
 import h5py
+import re
 from scipy import stats
 import ligo.segments as segments
 from pycbc.events.coherent import reweightedsnr_cut
@@ -335,8 +336,37 @@ def load_triggers(input_file, vetoes):
     trigs = h5py.File(input_file, 'r')
 
     if vetoes is not None:
-        # Developers: see PR 3972 for previous implementation
-        raise NotImplementedError
+        ## def functions to deal with dset and groups
+        def create_group(group_key, out_file, data, veto_mask):
+            group = out_file.create_group(group_key)
+            for key in data.keys():
+                if type(data[key]) == h5py._hl.group.Group:
+                    create_group(key, group, data[key], veto_mask)
+                else:
+                    if len(mask) == len(data[key]):
+                        group.create_dataset(key, data=data[key][veto_mask])
+                    else:
+                        group.create_dataset(key, data=data[key])
+            return out_file
+        if type(vetoes) is not dict:
+            err_msg = "Vetoes must be a dictionary of segmentlists."
+            raise RuntimeError(err_msg)
+        # Creating a temporary file to store the triggers
+        import tempfile
+        tf = tempfile.TemporaryFile()
+        vetoed_trigs = h5py.File(tf, 'w')
+        # Create a mask for the triggers, by looping over the triggers in the
+        # network and checking if the end time is in the vetoed segment
+        mask = []
+        for trig_index in range(len(trigs['network/end_time_gc'])):
+            mask.append(any([trigs['network/end_time_gc'][trig_index] in trial for
+                        trial in vetoes[trigs['network/slide_id'][trig_index]]]))
+        mask = numpy.array(mask)
+        # Mask the triggers
+        for key in trigs.keys():
+            vetoed_trigs = create_group(key, vetoed_trigs, trigs[key], mask)
+        trigs.close()
+        return vetoed_trigs
 
     return trigs
 
