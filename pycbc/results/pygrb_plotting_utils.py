@@ -187,19 +187,27 @@ def axis_min_value(trig_values, inj_values, inj_file):
 # Master plotting function: fits all plotting needs in for PyGRB results
 # =============================================================================
 def pygrb_plotter(trigs, injs, xlabel, ylabel, opts,
-                  snr_vals=None, conts=None, shade_cont_value=None,
+                  snr_vals=None, conts=None, hexs=None, shade_cont_value=None,
                   colors=None, vert_spike=False, cmd=None):
     """Master function to plot PyGRB results"""
     from matplotlib import pyplot as plt
+    import matplotlib
 
     # Set up plot
     fig = plt.figure()
     cax = fig.gca()
     # Plot trigger-related and (if present) injection-related quantities
-    cax_plotter = cax.loglog if opts.use_logs else cax.plot
-    cax_plotter(trigs[0], trigs[1], 'bx')
     if not (injs[0] is None and injs[1] is None):
+        cax_plotter = cax.loglog if opts.use_logs else cax.plot
+        cax_plotter(trigs[0], trigs[1], 'bx')
         cax_plotter(injs[0], injs[1], 'r+')
+    else:
+        scales = ['log', 'log'] if opts.use_logs else ['linear', 'linear']
+        ax = cax.hexbin(trigs[0], trigs[1], gridsize=300, xscale=scales[0],
+                        yscale=scales[1], lw=0.5, mincnt=1,
+                        norm=matplotlib.colors.LogNorm())
+        cb = plt.colorbar(ax)
+        cb.set_label('Trigger Density')
     cax.grid()
     # Plot contours
     if conts is not None:
