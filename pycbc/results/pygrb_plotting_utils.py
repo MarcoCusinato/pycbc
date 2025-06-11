@@ -201,7 +201,7 @@ def pygrb_plotter(trigs, injs, xlabel, ylabel, opts,
         (injs[0].size == 0 and injs[1].size == 0):
         scales = ['log', 'log'] if opts.use_logs else ['linear', 'linear']
         ax = cax.hexbin(trigs[0], trigs[1], gridsize=300, xscale=scales[0],
-                        yscale=scales[1], lw=0.5, mincnt=1,
+                        yscale=scales[1], lw=0.04, mincnt=1,
                         norm=matplotlib.colors.LogNorm(), zorder=2)
         cb = plt.colorbar(ax)
         cb.set_label('Trigger Density')
