@@ -198,7 +198,7 @@ def pygrb_plotter(trigs, injs, xlabel, ylabel, opts,
     cax = fig.gca()
     # Plot trigger-related and (if present) injection-related quantities
     if (injs[0] is None and injs[1] is None) or \
-        (injs[0].size == 0 and injs[1].size == 0):
+        (len(injs[0]) == 0 and len(injs[1]) == 0):
         scales = ['log', 'log'] if opts.use_logs else ['linear', 'linear']
         ax = cax.hexbin(trigs[0], trigs[1], gridsize=300, xscale=scales[0],
                         yscale=scales[1], lw=0.04, mincnt=1,
