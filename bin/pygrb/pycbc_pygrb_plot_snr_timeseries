@@ -218,9 +218,9 @@ if inj_file:
     if opts.plot_caption is None:
         opts.plot_caption = ("Blue crosses: background triggers.  "\
             "Red crosses: injections triggers.")
-    else:
-        if opts.plot_caption is None:
-            opts.plot_caption = ("Distribution of background triggers.")
+else:
+    if opts.plot_caption is None:
+        opts.plot_caption = ("Distribution of background triggers.")
 
 # Single IFO SNR versus time plots
 if not opts.x_lims:
