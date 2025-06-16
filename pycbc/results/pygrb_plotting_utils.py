@@ -187,19 +187,45 @@ def axis_min_value(trig_values, inj_values, inj_file):
 # Master plotting function: fits all plotting needs in for PyGRB results
 # =============================================================================
 def pygrb_plotter(trigs, injs, xlabel, ylabel, opts,
-                  snr_vals=None, conts=None, shade_cont_value=None,
+                  snr_vals=None, conts=None, hexs=None, shade_cont_value=None,
                   colors=None, vert_spike=False, cmd=None):
     """Master function to plot PyGRB results"""
     from matplotlib import pyplot as plt
+    import matplotlib
 
     # Set up plot
     fig = plt.figure()
     cax = fig.gca()
+    # Axes: labels and limits
+    cax.set_xlabel(xlabel)
+    cax.set_ylabel(ylabel)
+    if opts.x_lims:
+        x_lims = map(float, opts.x_lims.split(','))
+        cax.set_xlim(x_lims)
+    if opts.y_lims:
+        y_lims = map(float, opts.y_lims.split(','))
+        cax.set_ylim(y_lims)
     # Plot trigger-related and (if present) injection-related quantities
-    cax_plotter = cax.loglog if opts.use_logs else cax.plot
-    cax_plotter(trigs[0], trigs[1], 'bx')
-    if not (injs[0] is None and injs[1] is None):
+    if (injs[0] is None and injs[1] is None) or \
+        (len(injs[0]) == 0 and len(injs[1]) == 0):
+        scales = ['log', 'log'] if opts.use_logs else ['linear', 'linear']
+        ## Necessary trick to avoid artifacts
+        xmin, xmax = cax.get_xlim()
+        if not isinstance(trigs[0], numpy.ndarray):
+            trigs[0] = numpy.array(trigs[0])
+        if not isinstance(trigs[1], numpy.ndarray):
+            trigs[1] = numpy.array(trigs[1])
+        mask = (trigs[0] >= xmin) & (trigs[0] <= xmax)
+        ax = cax.hexbin(trigs[0][mask], trigs[1][mask], gridsize=300, xscale=scales[0],
+                        yscale=scales[1], lw=0.04, mincnt=1,
+                        norm=matplotlib.colors.LogNorm(), zorder=2)
+        cb = plt.colorbar(ax)
+        cb.set_label('Trigger Density')
+    else:
+        cax_plotter = cax.loglog if opts.use_logs else cax.plot
+        cax_plotter(trigs[0], trigs[1], 'bx')
         cax_plotter(injs[0], injs[1], 'r+')
+        
     cax.grid()
     # Plot contours
     if conts is not None:
@@ -212,15 +238,6 @@ def pygrb_plotter(trigs, injs, xlabel, ylabel, opts,
         polyx = numpy.append(polyx, [max(snr_vals), min(snr_vals)])
         polyy = numpy.append(polyy, [limy, limy])
         cax.fill(polyx, polyy, color='#dddddd')
-    # Axes: labels and limits
-    cax.set_xlabel(xlabel)
-    cax.set_ylabel(ylabel)
-    if opts.x_lims:
-        x_lims = map(float, opts.x_lims.split(','))
-        cax.set_xlim(x_lims)
-    if opts.y_lims:
-        y_lims = map(float, opts.y_lims.split(','))
-        cax.set_ylim(y_lims)
     # Wrap up
     plt.tight_layout()
     save_fig_with_metadata(fig, opts.output_file, cmd=cmd,
