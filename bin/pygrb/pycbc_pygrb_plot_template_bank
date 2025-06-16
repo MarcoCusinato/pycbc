@@ -1,0 +1,157 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2019 Gino Contestabile, Francesco Pannarale
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 3 of the License, or (at your
+# option) any later version.
+#
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General
+# Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+
+"""
+Plot template bank for a PyGRB run
+"""
+
+# =============================================================================
+# Preamble
+# =============================================================================
+import h5py
+import sys
+import matplotlib.pyplot as plt
+import matplotlib
+import logging
+import pycbc
+from pycbc.results import pygrb_postprocessing_utils as ppu
+from pycbc.results import save_fig_with_metadata
+import pycbc.conversions as conv
+
+__author__ = "Marco Cusinato <marco.cusinato@ligo.org>"
+__version__ = pycbc.version.git_verbose_msg
+__date__ = pycbc.version.date
+__program__ = "pycbc_pygrb_plot_template_bank"
+
+plt.switch_backend('Agg')
+matplotlib.rc('font', size=14)
+
+parser = ppu.pygrb_initialize_plot_parser(description=__doc__)
+parser.add_argument("--bank-file", type=str, required=True,
+                    help="Bank file")
+parser.add_argument("--x-variable", type=str, required=False, 
+                    default="m1",
+                    help="Variable to plot on the x-axis.")
+parser.add_argument("--y-variable", type=str, required=False, 
+                    default="m2",
+                    help="Variable to plot on the y-axis.")
+parser.add_argument("--cbar-variable", type=str, required=False, default=None,
+                    help="Argument to use as color")
+opts = parser.parse_args()
+pycbc.init_logging(opts.verbose, format="%(asctime)s: %(levelname)s: %(message)s")
+
+
+possible_args = ["m1", "m2", "spin1z", "spin2z", "mchirp", "mtot", "q", "Q",
+                 "chieff"]
+
+assert opts.x_variable in possible_args and opts.y_variable in possible_args, \
+    f"Invalid argument for --axis-args, arguments can only be {possible_args}."
+assert opts.cbar_variable is None or opts.cbar_variable in possible_args, \
+    f"Invalid argument for --colorbar-arg, arguments can only be {possible_args}."
+
+def return_arg(mass1, mass2, spin1, spin2, arg):
+    labels = {"m1": r"$M_1\,[\mathrm{M}_\odot]$",
+              "m2": r"$M_2\,[\mathrm{M}_\odot]$",
+              "mchirp": r"$\mathcal{M}\,[\mathrm{M}_\odot]$",
+              "mtot": r"$M_\mathrm{tot}\,[\mathrm{M}_\odot]$",
+              "q": r"$q$",
+              "Q": r"$Q$",
+              "spin1z": r"$s_{z,1}$",
+              "spin2z": r"$s_{z,2}$",
+              "chieff": r"$\chi_\mathrm{eff}$"}
+    if arg is None:
+        return None, None
+    arg_label = labels[arg]
+    if arg == "m1":
+        return mass1, arg_label
+    elif arg  == "m2":
+        return mass2, arg_label
+    elif arg == "mchirp":
+        return conv.mchirp_from_mass1_mass2(mass1, mass2), arg_label
+    elif arg == "mtot":
+        return conv.mtotal_from_mass1_mass2(mass1, mass2), arg_label
+    elif arg == "q":
+        return conv.q_from_mass1_mass2(mass1, mass2), arg_label
+    elif arg == "Q":
+        return conv.invq_from_mass1_mass2(mass1, mass2), arg_label
+    elif arg == "spin1z":
+        return spin1, arg_label
+    elif arg == "spin2z":
+        return spin2, arg_label
+    elif arg == "chieff":
+        return conv.chi_eff(mass1, mass2, spin1z, spin2z), arg_label
+    else:
+        raise NotImplementedError
+    
+
+# Load the bank file
+with h5py.File(opts.bank_file, 'r') as f:
+    mass1 = f['mass1'][...]
+    mass2 = f['mass2'][...]
+    spin1z = f['spin1z'][...]
+    spin2z =  f['spin2z'][...]
+
+logging.info("Bank loaded and ready to plot.")
+
+# Get the arguments
+xarg, xlab = return_arg(mass1, mass2, spin1z, spin2z, opts.x_variable)
+yarg, ylab = return_arg(mass1, mass2, spin1z, spin2z, opts.y_variable)
+carg, clab = return_arg(mass1, mass2, spin1z, spin2z, opts.cbar_variable)
+
+if opts.plot_title is None:
+    opts.plot_title = f"{ylab} vs {xlab} "
+    if carg is not None:
+        opts.plot_title += f"color coded by {clab}"
+
+if opts.plot_caption is None:
+    opts.plot_caption = "Dots: bank templates."
+
+logging.info("Plotting...")
+# Labels for the arguments
+fig = plt.figure()
+cax = fig.gca()
+
+cax.grid()
+
+if clab is not None:
+    ax = cax.scatter(xarg, yarg, c=carg, s=2)
+else:
+    ax = cax.hexbin(xarg, yarg, gridsize=300, lw=0.04, mincnt=1,
+                    norm=matplotlib.colors.LogNorm())
+    clab = "Template Density"
+    
+cb = plt.colorbar(ax)
+cb.set_label(clab)
+    
+
+# Axes: labels and limits
+cax.set_xlabel(xlab)
+cax.set_ylabel(ylab)
+
+cax.set_xlim(xarg.min(), xarg.max())
+cax.set_ylim(yarg.min(), yarg.max())
+
+
+plt.tight_layout()
+save_fig_with_metadata(fig, opts.output_file,
+                       title=opts.plot_title,
+                       caption=opts.plot_caption,
+                       cmd=' '.join(sys.argv),
+                       fig_kwds={'dpi':300})
+plt.close()
+logging.info("Done.")
