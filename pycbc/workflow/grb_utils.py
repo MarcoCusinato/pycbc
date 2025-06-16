@@ -540,6 +540,10 @@ def make_pygrb_plot(workflow, exec_name, out_dir,
             node.new_output_file_opt(workflow.analysis_time, '.json',
                                      '--exclusion-dist-output-file',
                                      tags=extra_tags)
+    elif exec_name == 'pycbc_pygrb_plot_template_bank':
+        node.add_input_opt('--bank-file', bank_file)
+        node.new_output_file_opt(workflow.analysis_time, '.png',
+                                 '--output-file', tags=extra_tags+tags)
     else:
         node.new_output_file_opt(workflow.analysis_time, '.png',
                                  '--output-file', tags=extra_tags)
@@ -566,7 +570,13 @@ def make_pygrb_plot(workflow, exec_name, out_dir,
             if workflow.cp.has_option_tags(exec_name, log_flag,
                                            tags=[subsection]):
                 node.add_opt('--'+log_flag)
-
+    elif exec_name == 'pycbc_pygrb_plot_template_bank':
+        # Variables to plot on x and y axes
+        node.add_opt('--x-variable', tags[0])
+        node.add_opt('--y-variable', tags[1])
+        if len(tags) > 2:
+            node.add_opt('--cbar-variable', tags[2])
+        
     # Add job node to workflow
     workflow += node
 
