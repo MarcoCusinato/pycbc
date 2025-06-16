@@ -273,9 +273,21 @@ plot_node, skygrid_plot = _workflow.make_pygrb_plot(
     wflow, 'pygrb_plot_skygrid', out_dir, trig_file=offsource_file
 )
 plotting_nodes.append(plot_node)
+# Plot the template bank
+banks = wflow.cp.get_subsections('pycbc_pygrb_plot_template_bank')
+bank_plots = []
+for bank_layout in banks:
+    tags = bank_layout.split('_')
+    plot_node, bank_plot = _workflow.make_pygrb_plot(
+        wflow, 'pycbc_pygrb_plot_template_bank', out_dir, bank_file=bank_file,
+        tags=tags
+    )
+    plotting_nodes.append(plot_node)
+    bank_plots.append(bank_plot[0])
 # Retrieve the segments plot (produced in the preprocessing stage)
 seg_plot = display_seg_plot(out_dir, args.segment_dir)
-summary_layout = [(grb_info_table[0],), (seg_plot, skygrid_plot[0])]
+summary_layout = [(grb_info_table[0],), (seg_plot, skygrid_plot[0]),
+                  (bank_plots[0], bank_plots[1])]
 layout.two_column_layout(out_dir, summary_layout)
 
 #
