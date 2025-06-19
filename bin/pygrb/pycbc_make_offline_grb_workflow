@@ -377,7 +377,7 @@ if wflow.cp.has_section("workflow-injections"):
     inj_files, inj_tags = _workflow.setup_injection_workflow(wflow, inj_dir)
     all_files.extend(inj_files)
     injs = inj_files
-
+    
     # Either split template bank for injections jobs or use same split banks
     # as for standard matched filter jobs
     if wflow.cp.has_section("workflow-splittable-injections"):
@@ -490,6 +490,7 @@ if post_proc_method == "PYGRB_OFFLINE":
         logging.info('Entering results module')
         results_files = _workflow.setup_pygrb_results_workflow(wflow, pp_dir,
                                                                clustered_files,
+                                                               inj_files,
                                                                inj_find_files,
                                                                full_bank_file,
                                                                seg_dir,
