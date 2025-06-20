@@ -513,12 +513,12 @@ def make_pygrb_plot(workflow, exec_name, out_dir,
         trig_time = workflow.cp.get('workflow', 'trigger-time')
         node.add_opt('--trigger-time', trig_time)
     # Pass the injection file as an input File instance
+    if inj_file is not None and exec_name == 'pycbc_plot_bank_corner':
+        node.add_input_opt('--bank-file', inj_file)
     if inj_file is not None and exec_name not in \
             ['pygrb_plot_skygrid', 'pygrb_plot_stats_distribution',
              'pycbc_pygrb_plot_template_bank']:
         node.add_input_opt('--found-missed-file', inj_file)
-    if inj_file is not None and exec_name == 'pycbc_plot_bank_corner':
-        node.add_input_opt('--bank-file', inj_file)
     # IFO option
     if ifo:
         node.add_opt('--ifo', ifo)
