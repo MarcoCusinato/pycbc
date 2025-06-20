@@ -818,7 +818,7 @@ def setup_pygrb_results_workflow(workflow, res_dir, trig_files,
     # Grab and pass all necessary files
     node.add_input_list_opt('--trig-files', trig_files)
     # node.add_input_opt('--config-files', config_file)
-    node.add_input_list_opt('--full-injections', full_injs_files)
+    node.add_input_list_opt('--full-inj-files', full_injs_files)
     node.add_input_list_opt('--inj-files', inj_files)
     node.add_input_opt('--bank-file', bank_file)
     node.add_opt('--segment-dir', seg_dir)
