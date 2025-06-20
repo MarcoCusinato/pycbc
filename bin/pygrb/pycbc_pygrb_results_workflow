@@ -138,7 +138,7 @@ parser.add_argument(
     help="Location(s) of input injection results file(s)",
 )
 parser.add_argument(
-    "--full-inj-files",
+    "--full-injections",
     action="store",
     nargs="+",
     help="Location(s) of the generated injections file(s)",
