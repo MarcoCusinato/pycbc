@@ -584,7 +584,7 @@ def make_pygrb_plot(workflow, exec_name, out_dir,
             node.add_opt('--cbar-variable', tags[2])
     elif exec_name == 'pycbc_plot_bank_corner':
         params = workflow.cp.options(exec_name)
-        node.add_list_opt('--parameters', params)
+        node.add_list_opt('--parameters', ['thetainj', 'inclination'])
         node.add_opt('--no-suptitle')
         node.add_opt('--title', f"{tags[0]} injections")
 
